@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   useReactTable,
@@ -29,14 +29,14 @@ export default function IslandsPage() {
     });
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Delete this island? This cannot be undone.')) return;
     setDeletingId(id);
     // Optimistic update
     setIslands(prev => prev.filter(i => i.id !== id));
     await deleteIsland(id);
     setDeletingId(null);
-  };
+  }, []);
 
   const typeColor = (type: string) => {
     const map: Record<string, { bg: string; text: string }> = {
@@ -135,7 +135,7 @@ export default function IslandsPage() {
         ),
       },
     ],
-    [deletingId] // eslint-disable-line react-hooks/exhaustive-deps
+    [deletingId, handleDelete]
   );
 
   const table = useReactTable({
