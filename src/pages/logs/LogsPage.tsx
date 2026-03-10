@@ -8,35 +8,41 @@ import {
   flexRender,
   type ColumnDef,
   type SortingState,
+  type ColumnFiltersState,
 } from '@tanstack/react-table';
 import Topbar from '../../components/layout/Topbar';
 import Button from '../../components/ui/Button';
-import { getLogs } from '../../services/fakeApi';
-import type { LogEntry } from '../../mock/logs';
+import { getFlightLogs } from '../../services/fakeApi';
+import type { FlightLogEntry } from '../../types/flightLog';
 
-const eventColor = (event: string): { bg: string; text: string } => {
-  if (event.toLowerCase().startsWith('error')) return { bg: '#fce4ec', text: '#e91e63' };
-  if (event.toLowerCase().includes('warning')) return { bg: '#fff3e0', text: '#f4a261' };
-  if (event.toLowerCase().includes('offline') || event.toLowerCase().includes('disconnected')) return { bg: '#f5f5f5', text: '#9e9e9e' };
-  if (event.toLowerCase().includes('online') || event.toLowerCase().includes('connected')) return { bg: '#e8f5e9', text: '#28a745' };
-  if (event.toLowerCase().includes('kicked')) return { bg: '#fce4ec', text: '#e91e63' };
-  return { bg: '#e3f2fd', text: '#2d9cdb' };
+const statusColors: Record<FlightLogEntry['status'], { bg: string; text: string; dot: string }> = {
+  AUTHORIZED: { bg: '#e8f5e9', text: '#28a745', dot: '#28a745' },
+  WARNED:     { bg: '#fff3e0', text: '#f4a261', dot: '#f4a261' },
 };
 
+const STATUS_FILTERS = ['All', 'AUTHORIZED', 'WARNED'] as const;
+
 export default function LogsPage() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<FlightLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [statusFilter, setStatusFilter] = useState<'All' | FlightLogEntry['status']>('All');
 
   useEffect(() => {
-    getLogs().then((data) => {
+    getFlightLogs().then((data) => {
       setLogs(data);
       setLoading(false);
     });
   }, []);
 
-  const columns = useMemo<ColumnDef<LogEntry>[]>(
+  const filteredLogs = useMemo(
+    () => (statusFilter === 'All' ? logs : logs.filter(l => l.status === statusFilter)),
+    [logs, statusFilter],
+  );
+
+  const columns = useMemo<ColumnDef<FlightLogEntry>[]>(
     () => [
       {
         accessorKey: 'id',
@@ -46,24 +52,93 @@ export default function LogsPage() {
         ),
       },
       {
-        accessorKey: 'timestamp',
-        header: 'Timestamp',
+        accessorKey: 'detectedAt',
+        header: 'Detected',
         cell: info => (
-          <span className="text-sm text-[#5e564d]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+          <span className="text-xs text-[#5e564d]" style={{ fontFamily: "'Nunito', sans-serif" }}>
             {info.getValue<string>()}
           </span>
         ),
       },
       {
-        accessorKey: 'event',
-        header: 'Event',
+        accessorKey: 'travelerIGN',
+        header: 'Traveler (IGN)',
+        cell: info => (
+          <span className="text-sm font-bold text-[#2d4d5c]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            {info.getValue<string>()}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'originIsland',
+        header: 'Origin',
+        cell: info => (
+          <span className="text-sm text-[#5e564d]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            🏝️ {info.getValue<string>()}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'destination',
+        header: 'Destination',
+        cell: info => (
+          <span className="text-sm text-[#5e564d]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            ✈️ {info.getValue<string>()}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'rejoinAttempts',
+        header: 'Rejoins',
         cell: info => {
-          const val = info.getValue<string>();
-          const colors = eventColor(val);
+          const val = info.getValue<number | undefined>();
+          if (!val) return <span className="text-xs text-[#c8c0a8]" style={{ fontFamily: "'Nunito', sans-serif" }}>—</span>;
           return (
             <span
-              className="text-xs font-bold px-2.5 py-1 rounded-full"
+              className="text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{ background: '#fce4ec', color: '#e91e63', fontFamily: "'Nunito', sans-serif" }}
+            >
+              🔁 {val}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: info => {
+          const val = info.getValue<FlightLogEntry['status']>();
+          const colors = statusColors[val];
+          return (
+            <span
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
               style={{ background: colors.bg, color: colors.text, fontFamily: "'Nunito', sans-serif" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colors.dot }} />
+              {val}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'actionBy',
+        header: 'Action By',
+        cell: info => (
+          <span className="text-xs text-[#5e564d]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            @{info.getValue<string>()}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'target',
+        header: 'Target',
+        cell: info => {
+          const val = info.getValue<string>();
+          const isLinked = val !== 'Visitor (unlinked)';
+          return (
+            <span
+              className="text-xs font-mono"
+              style={{ color: isLinked ? '#2d9cdb' : '#b0a898', fontFamily: "'Nunito', sans-serif" }}
             >
               {val}
             </span>
@@ -71,29 +146,33 @@ export default function LogsPage() {
         },
       },
       {
-        accessorKey: 'islandId',
-        header: 'Island',
-        cell: info => (
-          <span className="text-xs font-mono text-[#8a7f6e]">{info.getValue<string>()}</span>
-        ),
-      },
-      {
-        accessorKey: 'playerId',
-        header: 'Player',
-        cell: info => (
-          <span className="text-xs font-mono text-[#8a7f6e]">{info.getValue<string>()}</span>
-        ),
+        accessorKey: 'reason',
+        header: 'Reason',
+        cell: info => {
+          const val = info.getValue<string | undefined>();
+          if (!val) return <span className="text-xs text-[#c8c0a8]" style={{ fontFamily: "'Nunito', sans-serif" }}>—</span>;
+          return (
+            <span
+              className="text-xs text-[#5e564d] line-clamp-2 max-w-xs"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+              title={val}
+            >
+              {val}
+            </span>
+          );
+        },
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
-    data: logs,
+    data: filteredLogs,
     columns,
-    state: { globalFilter, sorting },
+    state: { globalFilter, sorting, columnFilters },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -101,13 +180,42 @@ export default function LogsPage() {
     initialState: { pagination: { pageSize: 10 } },
   });
 
+  const totalWarned = logs.filter(l => l.status === 'WARNED').length;
+  const totalAuthorized = logs.filter(l => l.status === 'AUTHORIZED').length;
+
   return (
     <div className="min-h-screen">
-      <Topbar title="Logs" />
+      <Topbar title="Flight Logger" />
 
       <div className="px-8 py-6">
-        {/* Search */}
-        <div className="mb-4 flex items-center gap-3">
+        {/* Summary pills */}
+        <div className="flex items-center gap-3 mb-5 flex-wrap">
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"
+            style={{ background: '#fffdf0', border: '1.5px solid #e8e0c8', fontFamily: "'Nunito', sans-serif", color: '#2d4d5c' }}
+          >
+            ✈️ <span className="text-[#8a7f6e] font-semibold">Total Cases</span>
+            <span className="ml-1">{logs.length}</span>
+          </div>
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"
+            style={{ background: '#e8f5e9', border: '1.5px solid #b7dfc0', fontFamily: "'Nunito', sans-serif", color: '#28a745' }}
+          >
+            ✅ Authorized
+            <span className="ml-1">{totalAuthorized}</span>
+          </div>
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"
+            style={{ background: '#fff3e0', border: '1.5px solid #f4d0a1', fontFamily: "'Nunito', sans-serif", color: '#f4a261' }}
+          >
+            ⚠️ Warned
+            <span className="ml-1">{totalWarned}</span>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        <div className="mb-4 flex items-center gap-3 flex-wrap">
+          {/* Search */}
           <div className="relative flex-1 max-w-sm">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0a898]"
@@ -118,7 +226,7 @@ export default function LogsPage() {
             <input
               value={globalFilter}
               onChange={e => setGlobalFilter(e.target.value)}
-              placeholder="Search logs..."
+              placeholder="Search traveler, island, destination…"
               className="w-full pl-9 pr-4 py-2 rounded-xl text-sm font-semibold text-[#2d4d5c] outline-none focus:ring-2 focus:ring-[#28a745]/40"
               style={{
                 background: '#fffdf0',
@@ -127,6 +235,29 @@ export default function LogsPage() {
               }}
             />
           </div>
+
+          {/* Status filter */}
+          <div className="flex items-center gap-1.5 rounded-xl p-1" style={{ background: '#fffdf0', border: '1.5px solid #e8e0c8' }}>
+            {STATUS_FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150"
+                style={{
+                  fontFamily: "'Nunito', sans-serif",
+                  background: statusFilter === f
+                    ? f === 'AUTHORIZED' ? '#28a745'
+                      : f === 'WARNED' ? '#f4a261'
+                      : '#2d4d5c'
+                    : 'transparent',
+                  color: statusFilter === f ? '#fff' : '#8a7f6e',
+                }}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
           <span className="text-xs text-[#8a7f6e] font-semibold" style={{ fontFamily: "'Nunito', sans-serif" }}>
             {table.getFilteredRowModel().rows.length} entries
           </span>
@@ -153,7 +284,7 @@ export default function LogsPage() {
                       {hg.headers.map(header => (
                         <th
                           key={header.id}
-                          className="px-5 py-3.5 text-left text-xs font-extrabold tracking-wider text-[#8a7f6e] uppercase select-none"
+                          className="px-4 py-3.5 text-left text-xs font-extrabold tracking-wider text-[#8a7f6e] uppercase select-none whitespace-nowrap"
                           style={{
                             fontFamily: "'Nunito', sans-serif",
                             cursor: header.column.getCanSort() ? 'pointer' : 'default',
@@ -182,7 +313,7 @@ export default function LogsPage() {
                       style={{ borderBottom: idx < table.getRowModel().rows.length - 1 ? '1px solid #f0ede0' : 'none' }}
                     >
                       {row.getVisibleCells().map(cell => (
-                        <td key={cell.id} className="px-5 py-3.5 text-sm">
+                        <td key={cell.id} className="px-4 py-3 text-sm align-top">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -191,7 +322,7 @@ export default function LogsPage() {
                   {table.getRowModel().rows.length === 0 && (
                     <tr>
                       <td colSpan={columns.length} className="text-center py-12 text-[#b0a898]" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                        No log entries found.
+                        No flight log entries found.
                       </td>
                     </tr>
                   )}

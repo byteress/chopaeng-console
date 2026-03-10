@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
 import Topbar from '../../components/layout/Topbar';
 import Button from '../../components/ui/Button';
+import IslandMapUpload from '../../components/ui/IslandMapUpload';
 import { createIsland } from '../../services/fakeApi';
 
 const schema = z.object({
@@ -36,6 +37,7 @@ const errorClass = 'text-xs text-red-500 mt-1 font-semibold';
 export default function CreateIslandPage() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [mapImage, setMapImage] = useState<string | undefined>(undefined);
 
   const {
     register,
@@ -48,6 +50,7 @@ export default function CreateIslandPage() {
     await createIsland({
       ...data,
       items: data.items.split(',').map(s => s.trim()).filter(Boolean),
+      mapImage,
     });
     navigate('/islands');
   };
@@ -169,6 +172,13 @@ export default function CreateIslandPage() {
                 style={inputStyle}
               />
               {errors.description && <p className={errorClass}>{errors.description.message}</p>}
+            </div>
+
+            <div>
+              <label className={labelClass} style={{ fontFamily: "'Nunito', sans-serif" }}>
+                Island Map <span className="normal-case font-normal text-[#b0a898]">(optional)</span>
+              </label>
+              <IslandMapUpload value={mapImage} onChange={setMapImage} />
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

@@ -7,4 +7,5 @@ export interface IslandData {
   cat: string;
   description: string;
   seasonal: string;
+  mapImage?: string;
 }

@@ -5,6 +5,7 @@ import IslandsPage from './pages/islands/IslandsPage'
 import CreateIslandPage from './pages/islands/CreateIslandPage'
 import EditIslandPage from './pages/islands/EditIslandPage'
 import LogsPage from './pages/logs/LogsPage'
+import WarningsPage from './pages/warnings/WarningsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             <Route path="/islands/create" element={<CreateIslandPage />} />
             <Route path="/islands/edit/:id" element={<EditIslandPage />} />
             <Route path="/logs" element={<LogsPage />} />
+            <Route path="/warnings" element={<WarningsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
