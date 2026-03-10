@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
 import Topbar from '../../components/layout/Topbar';
 import Button from '../../components/ui/Button';
+import IslandMapUpload from '../../components/ui/IslandMapUpload';
 import { createIsland } from '../../services/fakeApi';
 
 const schema = z.object({
