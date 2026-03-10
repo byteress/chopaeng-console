@@ -1,7 +1,9 @@
 import type { IslandData } from '../types/island';
 import type { FlightLogEntry } from '../types/flightLog';
+import type { Warning } from '../types/warning';
 import { mockIslands } from '../mock/islands';
 import { mockFlightLogs } from '../mock/flightLogs';
+import { mockWarnings } from '../mock/warnings';
 
 // In-memory store
 let islands: IslandData[] = [...mockIslands];
@@ -33,4 +35,9 @@ export const deleteIsland = async (id: string): Promise<void> => {
 export const getFlightLogs = async (): Promise<FlightLogEntry[]> => {
   await delay(500);
   return [...mockFlightLogs];
+};
+
+export const getWarnings = async (): Promise<Warning[]> => {
+  await delay(500);
+  return [...mockWarnings];
 };
