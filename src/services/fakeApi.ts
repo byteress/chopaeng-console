@@ -1,7 +1,7 @@
 import type { IslandData } from '../types/island';
-import type { LogEntry } from '../mock/logs';
+import type { FlightLogEntry } from '../types/flightLog';
 import { mockIslands } from '../mock/islands';
-import { mockLogs } from '../mock/logs';
+import { mockFlightLogs } from '../mock/flightLogs';
 
 // In-memory store
 let islands: IslandData[] = [...mockIslands];
@@ -30,7 +30,7 @@ export const deleteIsland = async (id: string): Promise<void> => {
   islands = islands.filter(i => i.id !== id);
 };
 
-export const getLogs = async (): Promise<LogEntry[]> => {
+export const getFlightLogs = async (): Promise<FlightLogEntry[]> => {
   await delay(500);
-  return [...mockLogs];
+  return [...mockFlightLogs];
 };
