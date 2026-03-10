@@ -1,5 +1,7 @@
 import type { IslandData } from '../types/island';
+import type { LogEntry } from '../mock/logs';
 import { mockIslands } from '../mock/islands';
+import { mockLogs } from '../mock/logs';
 
 // In-memory store
 let islands: IslandData[] = [...mockIslands];
@@ -26,4 +28,9 @@ export const updateIsland = async (updated: IslandData): Promise<IslandData> => 
 export const deleteIsland = async (id: string): Promise<void> => {
   await delay(500);
   islands = islands.filter(i => i.id !== id);
+};
+
+export const getLogs = async (): Promise<LogEntry[]> => {
+  await delay(500);
+  return [...mockLogs];
 };
